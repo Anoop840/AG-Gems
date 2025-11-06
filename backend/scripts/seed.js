@@ -40,6 +40,15 @@ const categories = [
   }
 ];
 
+// Map categories to available product images
+const categoryImages = {
+  'Rings': ['/sparkling-diamond-ring.png', '/solitaire-diamond-ring.png'],
+  'Necklaces': ['/gold-necklace.png', '/gold-necklace-luxury.jpg'],
+  'Earrings': ['/pearl-earrings.png', '/chandelier-earrings.jpg'],
+  'Bracelets': ['/gold-bracelet.png', '/jewelled-bracelet.jpg'],
+  'Anklets': ['/gold-bracelet.png'] // Using bracelet image as placeholder for anklets
+};
+
 const seedDatabase = async () => {
   try {
     // Clear existing data
@@ -68,10 +77,18 @@ const seedDatabase = async () => {
     const products = [];
     for (let i = 0; i < 20; i++) {
       const category = createdCategories[i % createdCategories.length];
+      const categoryName = category.name;
+      
+      // Get images for this category
+      const availableImages = categoryImages[categoryName] || ['/placeholder.svg'];
+      // Cycle through available images for this category
+      const imageIndex = Math.floor(i / createdCategories.length) % availableImages.length;
+      const productImage = availableImages[imageIndex];
+      
       products.push({
-        name: `${category.name.slice(0, -1)} ${i + 1}`,
-        description: `Beautiful ${category.name.toLowerCase()} with exquisite design. Perfect for special occasions and daily wear.`,
-        shortDescription: `Elegant ${category.name.toLowerCase()} piece`,
+        name: `${categoryName.slice(0, -1)} ${i + 1}`,
+        description: `Beautiful ${categoryName.toLowerCase()} with exquisite design. Perfect for special occasions and daily wear.`,
+        shortDescription: `Elegant ${categoryName.toLowerCase()} piece`,
         price: Math.floor(Math.random() * 50000) + 5000,
         compareAtPrice: Math.floor(Math.random() * 60000) + 10000,
         category: category._id,
@@ -83,8 +100,8 @@ const seedDatabase = async () => {
         },
         stock: Math.floor(Math.random() * 50) + 10,
         images: [{
-          url: 'https://via.placeholder.com/500',
-          alt: `${category.name.slice(0, -1)} ${i + 1}`,
+          url: productImage,
+          alt: `${categoryName.slice(0, -1)} ${i + 1}`,
           isPrimary: true
         }],
         tags: ['new', 'trending', 'bestseller'][Math.floor(Math.random() * 3)],

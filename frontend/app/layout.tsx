@@ -2,6 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Playfair_Display, Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { AuthProvider } from "@/context/AuthContext"
+import { CartProvider } from "@/context/CartContext"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const playfairDisplay = Playfair_Display({
@@ -30,7 +33,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${poppins.variable}`}>
       <body className="font-sans antialiased">
-        {children}
+        <AuthProvider>
+          <CartProvider>
+            {children}
+            <Toaster />
+          </CartProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

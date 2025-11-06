@@ -14,10 +14,12 @@ router.get('/', async (req, res) => {
       maxPrice,
       material,
       sort = '-createdAt',
-      search
+      search,
+      includeInactive = false
     } = req.query;
 
-    const query = { isActive: true };
+    // For admin users, allow fetching inactive products
+    const query = includeInactive === 'true' ? {} : { isActive: true };
 
     if (category) query.category = category;
     if (material) query.material = material;

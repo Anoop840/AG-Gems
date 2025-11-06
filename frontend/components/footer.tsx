@@ -11,7 +11,7 @@ export default function Footer() {
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <span className="text-background font-display font-bold">A</span>
               </div>
-              <span className="font-display text-lg font-semibold">Aurum Luxe</span>
+              <span className="font-display text-lg font-semibold">AG GEMS</span>
             </div>
             <p className="text-background/80 text-sm">Crafting timeless elegance in every piece</p>
           </div>

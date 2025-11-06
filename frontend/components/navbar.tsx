@@ -1,11 +1,60 @@
 "use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Heart, ShoppingCart, Menu, X } from "lucide-react"
+import { Heart, ShoppingCart, Menu, X, User, LogOut, Settings, Shield } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
+import { cartAPI } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [cartCount, setCartCount] = useState(0)
+  const { user, isAuthenticated, logout, loading } = useAuth()
+
+  useEffect(() => {
+    if (isAuthenticated && !loading) {
+      fetchCartCount()
+    } else {
+      setCartCount(0)
+    }
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      fetchCartCount()
+    }
+
+    window.addEventListener('cartUpdated', handleCartUpdate)
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate)
+    }
+  }, [isAuthenticated, loading])
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await cartAPI.getCart()
+      if (response.success && response.cart) {
+        const totalItems = response.cart.items.reduce((sum, item) => sum + item.quantity, 0)
+        setCartCount(totalItems)
+      }
+    } catch (error) {
+      // Silently fail - cart might not be accessible
+      setCartCount(0)
+    }
+  }
+
+  const getInitials = () => {
+    if (!user) return "U"
+    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+  }
 
   return (
     <nav className="fixed top-0 w-full bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
@@ -15,7 +64,7 @@ export default function Navbar() {
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground font-display font-bold text-lg">A</span>
             </div>
-            <span className="hidden sm:inline font-display text-xl font-semibold text-foreground">Aurum Luxe</span>
+            <span className="hidden sm:inline font-display text-xl font-semibold text-foreground">AG GEMS</span>
           </Link>
 
           {/* Desktop Menu */}
@@ -34,19 +83,96 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Icons */}
+          {/* Icons and Auth */}
           <div className="flex items-center gap-4">
             <button className="text-foreground hover:text-primary transition-colors">
               <Heart size={20} />
             </button>
-            <Link href="/cart" className="relative text-foreground hover:text-primary transition-colors">
-              <ShoppingCart size={20} />
-              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">
-                0
-              </span>
-            </Link>
-          </div>
+            {isAuthenticated ? (
+              <Link href="/cart" className="relative text-foreground hover:text-primary transition-colors">
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link href="/login" className="relative text-foreground hover:text-primary transition-colors">
+                <ShoppingCart size={20} />
+              </Link>
+            )}
 
+            {!loading && (
+              <>
+                {isAuthenticated && user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <Avatar>
+                          <AvatarFallback>{getInitials()}</AvatarFallback>
+                        </Avatar>
+                        <span className="hidden lg:inline text-sm font-medium">
+                          {user.firstName}
+                        </span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/profile" className="cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      {user.role === 'admin' && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin" className="cursor-pointer">
+                            <Shield className="mr-2 h-4 w-4" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem asChild>
+                        <Link href="/settings" className="cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={logout}
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <div className="hidden md:flex items-center gap-2">
+                    <Button variant="ghost" asChild>
+                      <Link href="/login">Sign In</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/register">Sign Up</Link>
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          
           {/* Mobile Menu Button */}
           <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-foreground">
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -77,6 +203,41 @@ export default function Navbar() {
             >
               Contact
             </Link>
+            {!loading && (
+              <>
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-foreground hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-destructive hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="block px-4 py-2 text-foreground hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/register"
+                      className="block px-4 py-2 text-foreground hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
