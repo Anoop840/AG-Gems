@@ -52,18 +52,24 @@ export const removeToken = (): void => {
 };
 
 // API request helper
-const apiRequest = async <T>(
+export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
   const token = getToken();
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  // 1. Initialize as a new Headers object, passing in any existing headers.
+  //    This constructor correctly handles all parts of the HeadersInit type.
+  const headers = new Headers(options.headers);
 
+  // 2. Set the Content-Type if it's not already set.
+  //    Using .set() avoids duplicates.
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  // 3. Use the .set() method to safely add the Authorization header.
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
@@ -179,6 +185,49 @@ export interface CartResponse {
   message?: string;
 }
 
+export interface OrderItem {
+  product: string; // Just the ID
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+
+export interface ShippingAddress {
+  fullName: string;
+  phone?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state?: string;
+  zipCode: string;
+  country?: string;
+}
+
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  user: string;
+  items: OrderItem[];
+  shippingAddress: ShippingAddress;
+  billingAddress: ShippingAddress;
+  subtotal: number;
+  tax: number;
+  shippingCost: number;
+  total: number;
+  paymentMethod: 'card' | 'upi' | 'netbanking' | 'cod' | 'wallet';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderResponse {
+  success: boolean;
+  order: Order;
+  message?: string;
+}
+
 // Cart API functions
 export const cartAPI = {
   getCart: async (): Promise<CartResponse> => {
@@ -208,6 +257,59 @@ export const cartAPI = {
   clearCart: async (): Promise<{ success: boolean; message: string }> => {
     return apiRequest<{ success: boolean; message: string }>('/cart/clear', {
       method: 'DELETE',
+    });
+  },
+};
+
+// Order API functions
+export const orderAPI = {
+  createOrder: async (orderData: {
+    items: { product: string; quantity: number }[];
+    shippingAddress: Partial<ShippingAddress>;
+    paymentMethod: string;
+  }): Promise<OrderResponse> => {
+    return apiRequest<OrderResponse>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  },
+
+  getOrder: async (id: string): Promise<OrderResponse> => {
+    return apiRequest<OrderResponse>(`/orders/${id}`);
+  },
+};
+
+// Payment API types
+export interface RazorpayOrderResponse {
+  success: boolean;
+  orderId: string; // This is the Razorpay order ID
+  amount: number;
+  currency: string;
+}
+
+export interface VerifyPaymentResponse {
+  success: boolean;
+  message: string;
+}
+
+// Payment API functions
+export const paymentAPI = {
+  createRazorpayOrder: async (amount: number, orderId: string): Promise<RazorpayOrderResponse> => {
+    return apiRequest<RazorpayOrderResponse>('/payment/create-order', {
+      method: 'POST',
+      body: JSON.stringify({ amount, orderId }),
+    });
+  },
+
+  verifyPayment: async (data: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+    orderId: string;
+  }): Promise<VerifyPaymentResponse> => {
+    return apiRequest<VerifyPaymentResponse>('/payment/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };
