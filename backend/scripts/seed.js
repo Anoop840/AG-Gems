@@ -5,8 +5,6 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const User = require('../models/User');
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jewelry-store');
-
 const categories = [
   {
     name: 'Rings',
@@ -49,78 +47,142 @@ const categoryImages = {
   'Anklets': ['/gold-bracelet.png'] // Using bracelet image as placeholder for anklets
 };
 
+const ADMIN_EMAIL = 'admin@jewelry.com';
+
 const seedDatabase = async () => {
   try {
-    // Clear existing data
-    await Category.deleteMany({});
-    await Product.deleteMany({});
-    await User.deleteMany({});
+    const shouldReset = process.argv.includes('--reset');
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/jewelry-store';
 
-    console.log('Database cleared');
+    await mongoose.connect(mongoUri);
+    console.log('Connected to MongoDB');
 
-    // Create categories
-    const createdCategories = await Category.insertMany(categories);
-    console.log('Categories created');
-
-    // Create admin user
-    const adminUser = await User.create({
-      firstName: 'Admin',
-      lastName: 'User',
-      email: 'admin@jewelry.com',
-      password: 'admin123',
-      role: 'admin',
-      isVerified: true
-    });
-    console.log('Admin user created');
-
-    // Create sample products
-    const products = [];
-    for (let i = 0; i < 20; i++) {
-      const category = createdCategories[i % createdCategories.length];
-      const categoryName = category.name;
-      
-      // Get images for this category
-      const availableImages = categoryImages[categoryName] || ['/placeholder.svg'];
-      // Cycle through available images for this category
-      const imageIndex = Math.floor(i / createdCategories.length) % availableImages.length;
-      const productImage = availableImages[imageIndex];
-      
-      products.push({
-        name: `${categoryName.slice(0, -1)} ${i + 1}`,
-        description: `Beautiful ${categoryName.toLowerCase()} with exquisite design. Perfect for special occasions and daily wear.`,
-        shortDescription: `Elegant ${categoryName.toLowerCase()} piece`,
-        price: Math.floor(Math.random() * 50000) + 5000,
-        compareAtPrice: Math.floor(Math.random() * 60000) + 10000,
-        category: category._id,
-        material: ['gold', 'silver', 'platinum', 'diamond'][Math.floor(Math.random() * 4)],
-        metal: {
-          type: ['gold', 'silver', 'platinum'][Math.floor(Math.random() * 3)],
-          purity: ['14K', '18K', '22K', '925'][Math.floor(Math.random() * 4)],
-          weight: Math.random() * 10 + 2
-        },
-        stock: Math.floor(Math.random() * 50) + 10,
-        images: [{
-          url: productImage,
-          alt: `${categoryName.slice(0, -1)} ${i + 1}`,
-          isPrimary: true
-        }],
-        tags: ['new', 'trending', 'bestseller'][Math.floor(Math.random() * 3)],
-        isFeatured: Math.random() > 0.5,
-        isActive: true
-      });
+    if (shouldReset) {
+      await Promise.all([
+        Category.deleteMany({}),
+        Product.deleteMany({}),
+        User.deleteMany({})
+      ]);
+      console.log('Existing data cleared (--reset mode)');
+    } else {
+      console.log('Safe mode: existing data will be preserved');
     }
 
-    await Product.insertMany(products);
-    console.log('Sample products created');
+    // Upsert default categories without removing custom ones
+    await Category.bulkWrite(
+      categories.map((category) => ({
+        updateOne: {
+          filter: { slug: category.slug },
+          update: { $set: category },
+          upsert: true
+        }
+      }))
+    );
+    const ensuredCategories = await Category.find({
+      slug: { $in: categories.map((category) => category.slug) }
+    }).sort({ order: 1 });
+
+    if (!ensuredCategories.length) {
+      throw new Error('Default categories could not be ensured');
+    }
+    console.log('Categories ensured');
+
+    // Ensure admin user exists without wiping other users
+    let adminUser = await User.findOne({ email: ADMIN_EMAIL });
+
+    if (!adminUser) {
+      adminUser = await User.create({
+        firstName: 'Admin',
+        lastName: 'User',
+        email: ADMIN_EMAIL,
+        password: 'admin123',
+        role: 'admin',
+        isVerified: true
+      });
+      console.log('Admin user created');
+    } else {
+      let adminUpdated = false;
+
+      if (adminUser.role !== 'admin') {
+        adminUser.role = 'admin';
+        adminUpdated = true;
+      }
+
+      if (!adminUser.isVerified) {
+        adminUser.isVerified = true;
+        adminUpdated = true;
+      }
+
+      if (adminUpdated) {
+        await adminUser.save();
+        console.log('Admin user updated');
+      } else {
+        console.log('Admin user already exists');
+      }
+    }
+
+    const existingProductCount = shouldReset ? 0 : await Product.estimatedDocumentCount();
+    const shouldSeedProducts = shouldReset || existingProductCount === 0;
+
+    if (shouldSeedProducts) {
+      const products = [];
+
+      for (let i = 0; i < 20; i++) {
+        const category = ensuredCategories[i % ensuredCategories.length];
+        const categoryName = category.name;
+        const singularName = categoryName.endsWith('s')
+          ? categoryName.slice(0, -1)
+          : categoryName;
+
+        const availableImages = categoryImages[categoryName] || ['/placeholder.svg'];
+        const imageIndex = Math.floor(i / ensuredCategories.length) % availableImages.length;
+        const productImage = availableImages[imageIndex];
+
+        products.push({
+          name: `${singularName} ${i + 1}`,
+          description: `Beautiful ${categoryName.toLowerCase()} with exquisite design. Perfect for special occasions and daily wear.`,
+          shortDescription: `Elegant ${categoryName.toLowerCase()} piece`,
+          price: Math.floor(Math.random() * 50000) + 5000,
+          compareAtPrice: Math.floor(Math.random() * 60000) + 10000,
+          category: category._id,
+          material: ['gold', 'silver', 'platinum', 'diamond'][Math.floor(Math.random() * 4)],
+          metal: {
+            type: ['gold', 'silver', 'platinum'][Math.floor(Math.random() * 3)],
+            purity: ['14K', '18K', '22K', '925'][Math.floor(Math.random() * 4)],
+            weight: Math.random() * 10 + 2
+          },
+          stock: Math.floor(Math.random() * 50) + 10,
+          images: [
+            {
+              url: productImage,
+              alt: `${singularName} ${i + 1}`,
+              isPrimary: true
+            }
+          ],
+          tags: ['new', 'trending', 'bestseller'][Math.floor(Math.random() * 3)],
+          isFeatured: Math.random() > 0.5,
+          isActive: true
+        });
+      }
+
+      if (products.length) {
+        await Product.insertMany(products);
+        console.log('Sample products created');
+      }
+    } else {
+      console.log('Products already exist; skipping sample product creation');
+    }
 
     console.log('Database seeded successfully!');
     console.log('\nAdmin credentials:');
     console.log('Email: admin@jewelry.com');
     console.log('Password: admin123');
 
+    await mongoose.disconnect();
     process.exit(0);
   } catch (error) {
     console.error('Error seeding database:', error);
+    await mongoose.disconnect();
     process.exit(1);
   }
 };

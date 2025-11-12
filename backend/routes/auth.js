@@ -108,6 +108,7 @@ router.post('/forgot-password', async (req, res) => {
         message: 'Password reset email sent'
       });
     } catch (error) {
+      console.error('Email service error:', error);
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
