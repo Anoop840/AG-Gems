@@ -1,17 +1,15 @@
 // frontend/server/middleware/auth.js
 
-const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Updated path
+import jwt from 'jsonwebtoken';
+import User from '../models/User'; // Updated path
+import { NextResponse } from 'next/server';
 
 // Helper function to handle JSON responses in Next.js Route Handlers
 const createErrorResponse = (status, message) => {
-  return new Response(JSON.stringify({ success: false, message }), {
-    status: status,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return NextResponse.json({ success: false, message }, { status });
 };
 
-exports.protect = async (req) => {
+export const protect = async (req) => {
   let token;
   const authHeader = req.headers.get('authorization');
 
@@ -39,7 +37,7 @@ exports.protect = async (req) => {
   }
 };
 
-exports.authorize = (user, ...roles) => {
+export const authorize = (user, ...roles) => {
   if (!roles.includes(user.role)) {
     return createErrorResponse(
       403,

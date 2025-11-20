@@ -1,9 +1,10 @@
-const mongoose = require('mongoose');
-require('dotenv').config();
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import Product from '../server/models/Product.js';
+import Category from '../server/models/Category.js';
+import User from '../server/models/User.js';
 
-const Product = require('../../frontend/server/models/Product');
-const Category = require('../../frontend/server/models/Category');
-const User = require('../../frontend/server/models/User');
+dotenv.config();
 
 const categories = [
   {

@@ -1,6 +1,6 @@
 // frontend/server/db.js
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // Cache the connection for performance in a serverless environment
 let cached = global.mongoose;
@@ -34,4 +34,4 @@ async function connectDB() {
   return cached.conn;
 }
 
-module.exports = connectDB;
+export default connectDB;

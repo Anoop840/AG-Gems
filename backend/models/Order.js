@@ -1,5 +1,6 @@
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+
 const orderSchema = new mongoose.Schema({
   orderNumber: { type: String, unique: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -75,4 +76,4 @@ orderSchema.pre('save', async function(next) {
   next();
 });
 
-module.exports = mongoose.model('Order', orderSchema);
+export default mongoose.models.Order || mongoose.model('Order', orderSchema);
