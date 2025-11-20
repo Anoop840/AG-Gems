@@ -147,11 +147,11 @@ export default function AdminPage() {
         productPayload.weight = Number(formData.weight)
       }
       if (formData.imageUrl) {
-        productPayload.images = [{
-          url: formData.imageUrl,
-          alt: formData.name,
-          isPrimary: true
-        }]
+        productPayload.images = formData.imageUrl ? [{
+        url: formData.imageUrl,
+        alt: formData.name,
+        isPrimary: true
+      }] : []
       }
 
       if (editingProduct) {
