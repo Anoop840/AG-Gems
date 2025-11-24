@@ -1,18 +1,16 @@
-import connectDB from '@/server/db';
-import Review from '@/server/models/Review';
-import Product from '@/server/models/Product';
-import { protect } from '@/server/middleware/auth';
-import { NextResponse } from 'next/server';
+// backend/routes/reviews.js
+const express = require('express'); // Change: Use require for express
+const router = express.Router();
+// Change: Use require for model and middleware paths
+const Review = require('../models/Review');
+const Product = require('../models/Product');
+const { protect } = require('../middleware/auth');
 
-connectDB();
-
-export async function POST(req) {
+// POST /api/reviews - Create a new review
+router.post('/', protect, async (req, res) => {
   try {
-    const userOrResponse = await protect(req);
-    if (userOrResponse instanceof Response) return userOrResponse;
-    const user = userOrResponse;
-
-    const { product, rating, title, comment, images } = await req.json();
+    const user = req.user; // User is attached by the Express middleware 'protect'
+    const { product, rating, title, comment, images } = req.body;
 
     // Check if user already reviewed
     const existingReview = await Review.findOne({ 
@@ -21,10 +19,10 @@ export async function POST(req) {
     });
 
     if (existingReview) {
-      return NextResponse.json({ 
+      return res.status(400).json({ // Change: Use Express res.status().json()
         success: false, 
         message: 'You have already reviewed this product' 
-      }, { status: 400 });
+      });
     }
 
     const review = await Review.create({
@@ -36,24 +34,21 @@ export async function POST(req) {
       images
     });
 
-    // Update product rating
+    // Update product rating (Logic preserved from original file)
     const reviews = await Review.find({ product, isApproved: true });
     const avgRating = reviews.length > 0 
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
-      : rating; // If this is the first review (and not yet approved), it won't affect rating until approved, or maybe logic differs. 
-      // The original code updated rating immediately based on approved reviews. 
-      // If this new review is not approved yet, it shouldn't affect rating.
-      // But the original code fetched approved reviews. So if this one is not approved (default false), it won't be included.
-      // Wait, if default isApproved is false, then reviews.length might be 0.
-      // Let's stick to original logic.
+      : rating; 
 
     await Product.findByIdAndUpdate(product, {
       rating: avgRating,
       reviewCount: reviews.length
     });
 
-    return NextResponse.json({ success: true, review }, { status: 201 });
+    return res.status(201).json({ success: true, review }); // Change: Use Express res.status().json()
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return res.status(500).json({ success: false, message: error.message });
   }
-}
+});
+
+module.exports = router; // Change: Use CommonJS export

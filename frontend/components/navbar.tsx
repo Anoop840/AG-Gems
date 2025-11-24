@@ -1,8 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Heart, ShoppingCart, Menu, X, User, LogOut, Settings, Shield } from "lucide-react"
+import { Heart, ShoppingCart, Menu, X, User, LogOut, Settings, Shield, Wallet, Loader2 } from "lucide-react" // Added Wallet icon
 import { useAuth } from "@/context/AuthContext"
+import { useWallet } from "@/context/WalletConnect" // IMPORT NEW HOOK
 import { cartAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +20,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
   const { user, isAuthenticated, logout, loading } = useAuth()
+  const { isConnected, shortenedAccount, connectWallet, isMetaMaskInstalled, isLoading: isWalletLoading } = useWallet() // USE WALLET HOOK
 
   useEffect(() => {
     if (isAuthenticated && !loading) {
@@ -55,6 +57,45 @@ export default function Navbar() {
     if (!user) return "U"
     return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
   }
+  
+  // --- Wallet Connect Button Component ---
+  const renderWalletButton = () => {
+    if (!isMetaMaskInstalled) {
+      return (
+        <Button variant="outline" size="sm" onClick={() => window.open('https://metamask.io/download/', '_blank')}>
+          Install MetaMask
+        </Button>
+      );
+    }
+    
+    if (isWalletLoading) {
+      return (
+        <Button variant="outline" size="sm" disabled>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Loading...
+        </Button>
+      );
+    }
+
+    if (isConnected) {
+      return (
+        <Button variant="secondary" size="sm" asChild>
+          <Link href="/profile">
+            <Wallet className="mr-2 h-4 w-4" />
+            {shortenedAccount}
+          </Link>
+        </Button>
+      );
+    }
+
+    return (
+      <Button variant="outline" size="sm" onClick={connectWallet}>
+        <Wallet className="mr-2 h-4 w-4" />
+        Connect Wallet
+      </Button>
+    );
+  }
+  // ------------------------------------
 
   return (
     <nav className="fixed top-0 w-full bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
@@ -85,6 +126,8 @@ export default function Navbar() {
 
           {/* Icons and Auth */}
           <div className="flex items-center gap-4">
+            {renderWalletButton()} {/* ADD WALLET BUTTON */}
+            
             <button className="text-foreground hover:text-primary transition-colors">
               <Heart size={20} />
             </button>

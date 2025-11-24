@@ -4,6 +4,7 @@ import { Playfair_Display, Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/context/AuthContext"
 import { CartProvider } from "@/context/CartContext"
+import { WalletProvider } from "@/context/WalletConnect" // IMPORT NEW CONTEXT
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
@@ -35,7 +36,11 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <AuthProvider>
           <CartProvider>
-            {children}
+            {/* WRAP WITH WALLET PROVIDER */}
+            <WalletProvider>
+              {children}
+            </WalletProvider>
+            {/* END WRAP */}
             <Toaster />
           </CartProvider>
         </AuthProvider>

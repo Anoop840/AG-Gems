@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../../server/models/User');
-const { protect } = require('../../middleware/auth');
+const User = require('../models/User'); // Corrected path to use '../models/User'
+const { protect } = require('../middleware/auth');
 
 // Update profile
 router.put('/profile', protect, async (req, res) => {
   try {
     const { firstName, lastName, phone } = req.body;
 
+    // IMPORTANT: Exclude walletAddress here, use a dedicated route for security
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { firstName, lastName, phone },
@@ -19,6 +20,65 @@ router.put('/profile', protect, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// --- NEW ROUTE TO LINK WALLET ADDRESS ---
+router.put('/link-wallet', protect, async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+
+    if (!walletAddress) {
+      return res.status(400).json({ success: false, message: 'Wallet address is required' });
+    }
+
+    // Check if the address is already linked to another user
+    const existingUser = await User.findOne({ walletAddress });
+    if (existingUser && existingUser._id.toString() !== req.user.id) {
+        return res.status(400).json({ success: false, message: 'This wallet address is already linked to another account' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { walletAddress: walletAddress.toLowerCase() },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ 
+        success: true, 
+        user,
+        message: 'Wallet address linked successfully' 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Remove wallet address
+router.put('/unlink-wallet', protect, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { walletAddress: null },
+      { new: true }
+    );
+
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ 
+        success: true, 
+        user,
+        message: 'Wallet address unlinked successfully' 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+// ---------------------------------------------
 
 // Add address
 router.post('/addresses', protect, async (req, res) => {

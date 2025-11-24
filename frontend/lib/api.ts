@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export interface User {
   id: string;
@@ -51,7 +51,7 @@ export const removeToken = (): void => {
   }
 };
 
-// API request helper
+// API request helper for JSON data
 export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
@@ -92,6 +92,49 @@ export const apiRequest = async <T>(
 
   return data;
 };
+
+// --- NEW HELPER FOR FILE UPLOADS ---
+export const fileUploadRequest = async <T>(
+  endpoint: string,
+  formData: FormData,
+  options: RequestInit = {}
+): Promise<T> => {
+  const token = getToken();
+  const headers = new Headers(options.headers);
+
+  // NOTE: When sending FormData, the browser automatically sets the
+  // 'Content-Type' header with the boundary, so we explicitly OMIT it here.
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  
+  // Create a new options object without the 'Content-Type' header if it exists,
+  // to ensure the browser sets the correct multipart/form-data header.
+  const uploadOptions: RequestInit = {
+    ...options,
+    method: 'POST', // File uploads are typically POST
+    body: formData,
+    headers: headers,
+  };
+
+  const response = await fetch(`${API_URL}${endpoint}`, uploadOptions);
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (error) {
+    throw new Error(`File upload request failed with status ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = data.message || data.error || `File upload failed with status ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return data;
+};
+// ------------------------------------
 
 // Auth API functions
 export const authAPI = {
@@ -362,6 +405,13 @@ export interface ProductResponse {
   product: Product;
 }
 
+// Image upload types
+interface UploadImageResponse {
+  success: boolean;
+  url: string;
+  publicId: string;
+}
+
 // Product API functions
 export const productAPI = {
   getProducts: async (params?: {
@@ -440,3 +490,14 @@ export const categoryAPI = {
   },
 };
 
+// --- NEW UPLOAD API ---
+export const uploadAPI = {
+  uploadImage: async (file: File): Promise<UploadImageResponse> => {
+    const formData = new FormData();
+    // 'image' must match the key expected by the backend's multer upload.single('image')
+    formData.append('image', file);
+    
+    return fileUploadRequest<UploadImageResponse>('/upload/image', formData);
+  }
+}
+// --------------------

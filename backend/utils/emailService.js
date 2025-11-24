@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export const sendOrderConfirmation = async (email, order) => {
+const sendOrderConfirmation = async (email, order) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -31,7 +31,7 @@ export const sendOrderConfirmation = async (email, order) => {
   await transporter.sendMail(mailOptions);
 };
 
-export const sendPasswordReset = async (email, resetToken) => {
+const sendPasswordReset = async (email, resetToken) => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
   const mailOptions = {
@@ -49,3 +49,5 @@ export const sendPasswordReset = async (email, resetToken) => {
 
   await transporter.sendMail(mailOptions);
 };
+
+module.exports = { sendOrderConfirmation, sendPasswordReset };

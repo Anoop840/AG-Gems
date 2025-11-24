@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true },
@@ -14,4 +14,4 @@ const categorySchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-export default mongoose.models.Category || mongoose.model('Category', categorySchema);
+module.exports=mongoose.models.Category || mongoose.model('Category', categorySchema);

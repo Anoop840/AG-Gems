@@ -1,8 +1,6 @@
-// frontend/server/db.js
+// backend/db.js
+const mongoose = require('mongoose'); // Change: Use require
 
-import mongoose from 'mongoose';
-
-// Cache the connection for performance in a serverless environment
 let cached = global.mongoose;
 
 if (!cached) {
@@ -17,6 +15,11 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      // Add standard options for Express setup
+      useNewUrlParser: true, 
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
     };
 
     cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((mongoose) => {
@@ -30,8 +33,8 @@ async function connectDB() {
     cached.promise = null;
     throw e;
   }
-
+  console.log("Database connected")
   return cached.conn;
 }
 
-export default connectDB;
+module.exports = connectDB; // Change: Use CommonJS export

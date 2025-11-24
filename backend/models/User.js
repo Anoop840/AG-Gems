@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+const mongoose = require('mongoose');
+const bcrypt= require("bcryptjs");
+const crypto=require("crypto");
 
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true, trim: true },
@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'], 
     default: 'user' 
   },
+  walletAddress:{ type: String, unique: true, sparse: true, default: null},
   addresses: [{
     fullName: String,
     phone: String,
@@ -61,4 +62,4 @@ userSchema.methods.getResetPasswordToken = function() {
   return resetToken;
 };
 
-export default mongoose.models.User || mongoose.model('User', userSchema);
+module.exports=mongoose.models.User || mongoose.model('User', userSchema);
