@@ -5,7 +5,7 @@ A full-stack e-commerce application built with MongoDB, Express.js, React (Next.
 ## Project Screenshots
 
 ### Homepage
-![Screenshot of the Homepage Carousel and Featured Products](/frontend/public/screenshots/1.png)
+![Screenshot of the Homepage Carousel and Featured Products](/frontend/public/screenshots/2.png)
 _A glimpse of the clean, luxury interface._
 
 ### Shop Page
