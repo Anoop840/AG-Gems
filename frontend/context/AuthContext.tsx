@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI, User, LoginData, RegisterData } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
+import { useWallet } from './WalletConnect';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const {disconnectWallet}=useWallet();
   const checkAuth = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -92,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     authAPI.logout();
     setUser(null);
+    disconnectWallet();
     toast({
       title: 'Logged out',
       description: 'You have been logged out successfully.',

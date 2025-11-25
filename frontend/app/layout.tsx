@@ -34,16 +34,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${poppins.variable}`}>
       <body className="font-sans antialiased">
-        <AuthProvider>
-          <CartProvider>
-            {/* WRAP WITH WALLET PROVIDER */}
-            <WalletProvider>
-              {children}
-            </WalletProvider>
-            {/* END WRAP */}
-            <Toaster />
-          </CartProvider>
-        </AuthProvider>
+        {/* FIX: WalletProvider must wrap AuthProvider because AuthProvider uses useWallet() */}
+        <WalletProvider> 
+          <AuthProvider>
+            <CartProvider>
+                {children}
+                <Toaster />
+            </CartProvider>
+          </AuthProvider>
+        </WalletProvider>
         <Analytics />
       </body>
     </html>

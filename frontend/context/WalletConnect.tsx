@@ -28,6 +28,7 @@ const WalletContext = createContext(undefined);
  * @property {boolean} isLoading Whether connection logic is currently running
  * @property {boolean} isMetaMaskInstalled Whether the MetaMask extension is detected
  * @property {() => Promise<void>} connectWallet Function to prompt MetaMask connection
+ * @property {() => void} disconnectWallet Function to clear the connection state in the app
  * @property {string} shortenedAccount The shortened version of the account address
  */
 
@@ -72,6 +73,18 @@ export function WalletProvider({ children }) {
     }
   }, []);
 
+  // --- NEW DISCONNECT FUNCTION ---
+  const disconnectWallet = useCallback(() => {
+    setAccount(null);
+    setBalance(null);
+    setChainId(null);
+    setProvider(null); // Clear provider state as well
+    // Note: We cannot programmatically force MetaMask to forget permission, 
+    // but clearing app state achieves the goal for the user session.
+    toast({ title: 'Wallet Disconnected', description: 'Web3 session cleared due to user logout.' });
+  }, []);
+  // -----------------------------
+
   // 1. Initial Setup and Status Check
   const initializeWallet = useCallback(async () => {
     if (ethereum) {
@@ -115,10 +128,10 @@ export function WalletProvider({ children }) {
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       const newAccount = accounts[0];
       
-      setAccount(newAccount);
-      
       const newProvider = new ethers.BrowserProvider(ethereum);
       setProvider(newProvider);
+
+      setAccount(newAccount);
       
       await getChainInfo(newProvider, newAccount);
 
@@ -149,7 +162,8 @@ export function WalletProvider({ children }) {
           setAccount(null);
           setBalance(null);
           setChainId(null);
-          toast({ title: 'Wallet Disconnected', description: 'MetaMask account changed or disconnected.' });
+          // Do not show toast here as it will conflict with app logout toast
+          // toast({ title: 'Wallet Disconnected', description: 'MetaMask account changed or disconnected.' });
         } else {
           setAccount(accounts[0]);
           getChainInfo(provider, accounts[0]);
@@ -192,6 +206,7 @@ export function WalletProvider({ children }) {
     isLoading,
     isMetaMaskInstalled,
     connectWallet,
+    disconnectWallet, // EXPOSED TO CONTEXT
     shortenedAccount: shortenAddress(account),
   };
 
