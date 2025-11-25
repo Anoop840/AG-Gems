@@ -9,7 +9,7 @@ A full-stack e-commerce application built with MongoDB, Express.js, React (Next.
 _A glimpse of the clean, luxury interface._
 
 ### Shop Page
-![Screenshot of the Shop Product  Page](/frontend/public/screenshots/2.png)
+![Screenshot of the Shop Product  Page](/frontend/public/screenshots/3.png)
 _Product management view for quick CRUD operations._
 
 ### Admin Dashboard
