@@ -58,11 +58,11 @@ export const apiRequest = async <T>(
 ): Promise<T> => {
   const token = getToken();
   // 1. Initialize as a new Headers object, passing in any existing headers.
-  //    This constructor correctly handles all parts of the HeadersInit type.
+  //    This constructor correctly handles all parts of the HeadersInit type.
   const headers = new Headers(options.headers);
 
   // 2. Set the Content-Type if it's not already set.
-  //    Using .set() avoids duplicates.
+  //    Using .set() avoids duplicates.
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -341,6 +341,19 @@ export const paymentAPI = {
     return apiRequest<RazorpayOrderResponse>('/payment/create-order', {
       method: 'POST',
       body: JSON.stringify({ amount, orderId }),
+    });
+  },
+  
+  // 🛠️ FIX: Moved verifyCryptoPayment outside of createRazorpayOrder
+  verifyCryptoPayment: async (data: {
+    orderId: string;
+    txHash: string;
+    amountPaid: string;
+    currency: string;
+  }): Promise<VerifyPaymentResponse> => {
+    return apiRequest<VerifyPaymentResponse>('/payment/verify-crypto', { // NEW ENDPOINT
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 
