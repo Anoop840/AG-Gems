@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: 'user' | 'admin';
   phone?: string;
+  walletAddress?: string | null;
 }
 
 export interface AuthResponse {
@@ -257,12 +258,25 @@ export interface Order {
   subtotal: number;
   tax: number;
   shippingCost: number;
+  discount: number;
   total: number;
   paymentMethod: 'card' | 'upi' | 'netbanking' | 'cod' | 'wallet';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentDetails: {
+    transactionId?: string;
+    paidAt?: string;
+    currency?: string;
+    amountPaid?: number;
+  },
   orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OrdersResponse {
+  success: boolean;
+  orders: Order[];
+  message?: string;
 }
 
 export interface OrderResponse {
@@ -320,6 +334,11 @@ export const orderAPI = {
   getOrder: async (id: string): Promise<OrderResponse> => {
     return apiRequest<OrderResponse>(`/orders/${id}`);
   },
+
+  // <<< NEW FUNCTION >>>
+  getMyOrders: async (): Promise<OrdersResponse> => {
+    return apiRequest<OrdersResponse>('/orders/my-orders');
+  }
 };
 
 // Payment API types
@@ -511,6 +530,22 @@ export const uploadAPI = {
     formData.append('image', file);
     
     return fileUploadRequest<UploadImageResponse>('/upload/image', formData);
+  }
+}
+// --------------------
+// --- NEW USER API ---
+export const usersAPI = {
+  linkWallet: async (walletAddress: string): Promise<{ success: boolean; message: string; user: User }> => {
+    return apiRequest<{ success: boolean; message: string; user: User }>('/users/link-wallet', {
+        method: 'PUT',
+        body: JSON.stringify({ walletAddress }),
+    });
+  },
+
+  unlinkWallet: async (): Promise<{ success: boolean; message: string; user: User }> => {
+    return apiRequest<{ success: boolean; message: string; user: User }>('/users/unlink-wallet', {
+        method: 'PUT',
+    });
   }
 }
 // --------------------

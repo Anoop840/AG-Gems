@@ -107,7 +107,7 @@ export default function Footer() {
             <a href="#" className="text-background/80 hover:text-background transition-colors">
               <Twitter size={20} />
             </a>
-            <a href="#" className="text-background/80 hover:text-background transition-colors">
+            <a href="anoopag136@gmail.com" className="text-background/80 hover:text-background transition-colors">
               <Mail size={20} />
             </a>
           </div>
