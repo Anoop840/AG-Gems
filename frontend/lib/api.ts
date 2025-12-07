@@ -25,6 +25,18 @@ export interface RegisterData {
   phone?: string;
 }
 
+export interface ExchangeRateResponse {
+  success: boolean;
+  inrToEthRate: number; // e.g., 0.0000035064
+  ethPriceInInr: number; // e.g., 285195.6884
+  message?: string;
+}
+// --- NEW WISHLIST INTERFACES ---
+export interface WishlistResponse {
+  success: boolean;
+  wishlist: Product[]; // Assuming the product structure is the same as existing 'Product'
+  message?: string;
+}
 export interface LoginData {
   email: string;
   password: string;
@@ -51,7 +63,24 @@ export const removeToken = (): void => {
     localStorage.removeItem('token');
   }
 };
+// --- NEW WISHLIST API ---
+export const wishlistAPI = {
+  getWishlist: async (): Promise<WishlistResponse> => {
+    return apiRequest<WishlistResponse>('/wishlist');
+  },
 
+  addToWishlist: async (productId: string): Promise<WishlistResponse> => {
+    return apiRequest<WishlistResponse>(`/wishlist/add/${productId}`, {
+      method: 'POST',
+    });
+  },
+
+  removeFromWishlist: async (productId: string): Promise<WishlistResponse> => {
+    return apiRequest<WishlistResponse>(`/wishlist/remove/${productId}`, {
+      method: 'DELETE',
+    });
+  },
+};
 // API request helper for JSON data
 export const apiRequest = async <T>(
   endpoint: string,
@@ -361,6 +390,11 @@ export const paymentAPI = {
       method: 'POST',
       body: JSON.stringify({ amount, orderId }),
     });
+  },
+
+  // 🛠️ NEW FUNCTION: Fetch real-time ETH to INR rate
+  getEthExchangeRate: async (): Promise<ExchangeRateResponse> => {
+    return apiRequest<ExchangeRateResponse>('/payment/exchange-rate');
   },
   
   // 🛠️ FIX: Moved verifyCryptoPayment outside of createRazorpayOrder

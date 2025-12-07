@@ -1,12 +1,12 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Script from "next/script"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
 import { useWallet } from "@/context/WalletConnect"
-import { apiRequest, Order, VerifyPaymentResponse, RazorpayOrderResponse } from "@/lib/api"
+import { apiRequest,paymentAPI, Order, VerifyPaymentResponse, RazorpayOrderResponse, ExchangeRateResponse } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import { Wallet, Loader2, DollarSign, Bitcoin} from "lucide-react"
 import { Button } from '@/components/ui/button';
@@ -76,8 +76,9 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card') // 'card' is Razorpay
-  const [exchangeRate, setExchangeRate] = useState(0.0000030) // Mock INR/ETH rate
-
+  const [exchangeRate, setExchangeRate] = useState(CRYPTO_OPTIONS.ETH.mockInrToUnitRate) // Mock INR/ETH rate
+  const [rateLoading, setRateLoading] = useState(true) // <-- FIXED REFERENCE ERROR
+  const [rateError, setRateError] = useState<string | null>(null) // <-- FIXED REFERENCE ERROR
   // 🛠️ FIX C: Declare missing form state variables
   const [firstName, setFirstName] = useState(user?.firstName || "")
   const [lastName, setLastName] = useState(user?.lastName || "")
@@ -90,9 +91,32 @@ export default function CheckoutPage() {
   const shipping = subtotal > 50000 ? 0 : 500
   const tax = subtotal * 0.18
   const total = subtotal + shipping + tax
-
   // Calculate ETH equivalent
   const ethAmount = total * exchangeRate;
+
+  useEffect(() => {
+    async function fetchRate() {
+      try {
+        setRateLoading(true)
+        const response: ExchangeRateResponse = await paymentAPI.getEthExchangeRate()
+        if (response.success) {
+            setExchangeRate(response.inrToEthRate)
+            setRateError(null)
+        } else {
+            setRateError('Failed to get real-time ETH rate.')
+            // Fallback to mock rate
+            setExchangeRate(CRYPTO_OPTIONS.ETH.mockInrToUnitRate) 
+        }
+      } catch (err: any) {
+        setRateError(err.message || 'Error fetching rate.')
+        // Fallback to mock rate
+        setExchangeRate(CRYPTO_OPTIONS.ETH.mockInrToUnitRate)
+      } finally {
+        setRateLoading(false)
+      }
+    }
+    fetchRate()
+  }, [])
 
   // --- CONTRACT DETAILS (FOR REFERENCE/FUTURE USDC USE) ---
   const USDC_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a9AaF631E7dc';
@@ -346,12 +370,24 @@ export default function CheckoutPage() {
                 </div>
                 {paymentMethod === 'wallet' && (
                   <div className="mt-4 p-3 bg-background rounded-lg border border-border">
-                    <p className="text-sm text-muted-foreground">
-                      You will pay <span className="font-semibold text-foreground">
-                        {ethAmount.toFixed(8)} ETH
-                      </span> (approx. ₹{total.toLocaleString()}) from your connected wallet.
-                      Exchange rates are volatile and final confirmation is on-chain.
-                    </p>
+                    {rateLoading ? (
+                        <div className="flex items-center text-primary">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <p className="text-sm">Fetching real-time ETH rate...</p>
+                        </div>
+                    ) : rateError ? (
+                        <p className="text-sm text-destructive">
+                            Rate Error: {rateError}. Using fallback rate.
+                        </p>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            You will pay <span className="font-semibold text-foreground">
+                                {ethAmount.toFixed(8)} ETH
+                            </span> (approx. ₹{total.toLocaleString()}) from your connected wallet.
+                            <br/>
+                            <span className='text-xs text-green-600'>Live rate applied.</span>
+                        </p>
+                    )}
                     {!isConnected && (
                       <Button variant="outline" size="sm" onClick={connectWallet} className="mt-3">
                         <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
