@@ -502,6 +502,20 @@ export const productAPI = {
     const queryString = queryParams.toString();
     return apiRequest<ProductsResponse>(`/products${queryString ? `?${queryString}` : ''}`);
   },
+  getSuggestions: async (query: string): Promise<{ success: boolean; suggestions: Product[] }> => {
+    return apiRequest(`/${endpoint}/search/suggestions?q=${query}`);
+  },
+
+  getRelatedProducts: async (id: string): Promise<ProductsResponse> => {
+    return apiRequest(`/products/${id}/related`);
+  },
+
+  // Visual Search
+  visualSearch: async (file: File): Promise<ProductsResponse> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return fileUploadRequest('/upload/vision-search', formData);
+  },
 
   getProduct: async (id: string): Promise<ProductResponse> => {
     return apiRequest<ProductResponse>(`/products/${id}`);

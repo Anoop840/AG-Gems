@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Heart, ShoppingCart, Menu, X, User, LogOut, Settings, Shield, Wallet, Loader2 } from "lucide-react" // Added Wallet icon
 import { useAuth } from "@/context/AuthContext"
 import { useWallet } from "@/context/WalletConnect" // IMPORT NEW HOOK
-import { cartAPI } from "@/lib/api"
+import { cartAPI, wishlistAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -19,26 +19,47 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  const [wishlistCount, setWishlistCount] = useState(0)
   const { user, isAuthenticated, logout, loading } = useAuth()
   const { isConnected, shortenedAccount, connectWallet, isMetaMaskInstalled, isLoading: isWalletLoading } = useWallet() // USE WALLET HOOK
 
   useEffect(() => {
     if (isAuthenticated && !loading) {
       fetchCartCount()
+      fetchWishlistCount()
     } else {
       setCartCount(0)
+      setWishlistCount(0)
     }
 
     // Listen for cart updates
     const handleCartUpdate = () => {
       fetchCartCount()
     }
+    // Listen for wishlist updates
+    const handleWishlistUpdate = () => {
+      fetchWishlistCount()
+    }
 
     window.addEventListener('cartUpdated', handleCartUpdate)
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate)
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate)
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate)
     }
   }, [isAuthenticated, loading])
+
+  const fetchWishlistCount = async () => {
+    try {
+      const response = await wishlistAPI.getWishlist()
+      if (response.success && response.wishlist) {
+        setWishlistCount(response.wishlist.length)
+      }
+    } catch (error) {
+      // Silently fail - wishlist might not be accessible
+      setWishlistCount(0)
+    }
+  }
 
   const fetchCartCount = async () => {
     try {
@@ -128,9 +149,14 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             {renderWalletButton()} {/* ADD WALLET BUTTON */}
             
-            <button className="text-foreground hover:text-primary transition-colors">
+            <Link href="/wishlist" className="relative text-foreground hover:text-primary transition-colors">
               <Heart size={20} />
-            </button>
+              {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+            </Link>
             {isAuthenticated ? (
               <Link href="/cart" className="relative text-foreground hover:text-primary transition-colors">
                 <ShoppingCart size={20} />

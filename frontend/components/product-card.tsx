@@ -16,7 +16,7 @@ interface ProductCardProps {
   initialIsFavorited?: boolean
 }
 
-export default function ProductCard({ id, image, title, price, category, initialIsFavorited = false }: ProductCardProps) {
+function ProductCard({ id, image, title, price, category, initialIsFavorited = false }: ProductCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -69,3 +69,5 @@ export default function ProductCard({ id, image, title, price, category, initial
     </Link>
   )
 }
+
+export default ProductCard
