@@ -108,115 +108,82 @@ export default function ShopPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="font-display text-4xl font-bold mb-2 text-foreground">Our Collections</h1>
-          <p className="text-muted-foreground mb-8">Explore our curated selection of premium jewellery</p>
+      <main className="pt-24 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Page Header */}
+          <div className="py-8 text-center">
+            <h1 className="text-4xl font-display font-bold tracking-tight text-foreground">
+              Our Collection
+            </h1>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
+              Explore our exquisite selection of handcrafted gemstone jewelry.
+            </p>
+          </div>
 
           <div className="grid lg:grid-cols-4 gap-8">
-            {/* Filters Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-secondary rounded-lg p-6 sticky top-32">
-                <h3 className="font-display font-bold text-lg mb-6 text-foreground">Filters</h3>
-
-                {/* Category Filter */}
-                {categories.length > 0 && (
-                  <div className="mb-8">
-                    <h4 className="font-semibold text-foreground mb-3">Category</h4>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCategory === null}
-                          onChange={() => setSelectedCategory(null)}
-                          className="w-4 h-4 rounded border-border"
-                        />
-                        <span className="text-foreground">All Categories</span>
-                      </label>
-                      {categories.map((cat) => (
-                        <label key={cat} className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedCategory === cat}
-                            onChange={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                            className="w-4 h-4 rounded border-border"
-                          />
-                          <span className="text-foreground capitalize">{cat}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-
-                {/* Sort */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-3">Sort By</h4>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            {/* Category Links */}
+            <aside className="hidden lg:block lg:col-span-1">
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Categories</h3>
+                <div className="flex flex-col space-y-2">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`text-left ${!selectedCategory ? 'text-primary font-semibold' : 'text-muted-foreground'}`}
                   >
-                    <option value="featured">Featured</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                  </select>
+                    All
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`text-left ${selectedCategory === cat ? 'text-primary font-semibold' : 'text-muted-foreground'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
+            </aside>
 
             {/* Products Grid */}
             <div className="lg:col-span-3">
-              {error ? (
-                <div className="text-center py-12">
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
-                    <p className="text-destructive font-semibold mb-2">Error Loading Products</p>
-                    <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                    <button
-                      onClick={fetchProducts}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
+              {/* Sorting and Info */}
+              <div className="flex justify-between items-center mb-6">
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredProducts.length} products
+                </p>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                </select>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
-              ) : filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredProducts.map((product) => {
-                    const image = product.images?.find(img => img.isPrimary)?.url || 
-                                 product.images?.[0]?.url || 
-                                 '/placeholder.svg'
-                    return (
-                      <ProductCard
-                        key={product._id}
-                        id={product._id}
-                        image={image}
-                        title={product.name}
-                        price={product.price}
-                        category={product.category?.name || 'Jewelry'}
-                      />
-                    )
-                  })}
+              ) : error ? (
+                <div className="text-center py-12">
+                  <p className="text-destructive font-semibold">{error}</p>
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">No products found matching your criteria</p>
-                  {selectedCategory && (
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className="text-primary hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                  )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredProducts.map(product => (
+                    <ProductCard key={product._id} product={product} />
+                  ))}
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       <Footer />
     </div>
-  )
+  );
 }

@@ -83,22 +83,13 @@ export default function WishlistPage() {
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {wishlist.map((product) => {
-          const image = product.images?.find(img => img.isPrimary)?.url || 
-                        product.images?.[0]?.url || 
-                        '/placeholder.svg'
-          return (
-            <ProductCard
-              key={product._id}
-              id={product._id}
-              image={image}
-              title={product.name}
-              price={product.price}
-              category={product.category?.name || 'Jewelry'}
-              initialIsFavorited={true} // Since it's on the wishlist page
-            />
-          )
-        })}
+        {wishlist.map((product) => (
+          <ProductCard
+            key={product._id}
+            product={product}
+            initialIsFavorited={true} // Since it's on the wishlist page
+          />
+        ))}
       </div>
     )
   }

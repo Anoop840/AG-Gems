@@ -32,11 +32,7 @@ export function RelatedProducts({ productId }: { productId: string }) {
         {products.map((product) => (
           <ProductCard
             key={product._id}
-            id={product._id}
-            image={product.image}
-            title={product.title}
-            price={product.price}
-            category={product.category}
+            product={product}
           />
         ))}
       </div>
