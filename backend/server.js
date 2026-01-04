@@ -40,16 +40,27 @@ const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
   },
 });
 
-// Apply CSRF protection to all state-changing routes
-app.use(csrfProtection);
-
-// Route to get CSRF token
-app.get("/api/csrf-token", (req, res) => {
+// Route to get CSRF token (must be BEFORE CSRF protection middleware)
+app.get("/api/csrf-token", csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
+});
+
+// Apply CSRF protection to all state-changing routes (POST, PUT, DELETE, PATCH)
+app.use((req, res, next) => {
+  // Skip CSRF for GET and HEAD requests
+  if (
+    req.method === "GET" ||
+    req.method === "HEAD" ||
+    req.method === "OPTIONS"
+  ) {
+    return next();
+  }
+  // Apply CSRF protection for state-changing methods
+  csrfProtection(req, res, next);
 });
 
 // Import Routes (Ensure all route files are correctly updated to CommonJS)

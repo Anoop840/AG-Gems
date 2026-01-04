@@ -55,7 +55,9 @@ let csrfToken: string | null = null;
 const fetchCsrfToken = async () => {
   if (typeof window !== 'undefined' && !csrfToken) {
     try {
-      const res = await fetch(`${API_URL}/csrf-token`);
+      const res = await fetch(`${API_URL}/csrf-token`, {
+        credentials: 'include', // Important: include cookies in the request
+      });
       const data = await res.json();
       csrfToken = data.csrfToken;
     } catch (error) {
@@ -103,7 +105,8 @@ export const wishlistAPI = {
 // API request helper for JSON data
 export const apiRequest = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryOnCsrfError = true
 ): Promise<T> => {
   const token = getToken();
   await fetchCsrfToken(); // Ensure CSRF token is available
@@ -129,6 +132,7 @@ export const apiRequest = async <T>(
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include', // Important: include cookies for CSRF validation
   });
 
   let data;
@@ -140,6 +144,13 @@ export const apiRequest = async <T>(
   }
 
   if (!response.ok) {
+    // If we get a 403 and it's a CSRF error, try refreshing the token once
+    if (response.status === 403 && retryOnCsrfError && data.code === 'EBADCSRFTOKEN') {
+      csrfToken = null; // Clear the cached token
+      await fetchCsrfToken(); // Fetch a fresh token
+      return apiRequest<T>(endpoint, options, false); // Retry once with fresh token
+    }
+    
     const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
     throw new Error(errorMessage);
   }
@@ -169,6 +180,7 @@ export const fileUploadRequest = async <T>(
     ...options,
     method: 'POST', // File uploads are typically POST
     body: formData,
+    credentials: 'include', // Important: include cookies for CSRF validation
     headers: headers,
   };
 
