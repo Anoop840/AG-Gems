@@ -93,7 +93,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 // Get current user
 router.get("/me", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("-password");
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -160,10 +160,11 @@ router.post("/reset-password/:token", async (req, res) => {
       });
     }
 
-    // Set new password
+    // Set new password and invalidate token fields
     user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    // user.passwordChangedAt will be set by pre-save hook
     await user.save();
 
     // Generate new JWT token

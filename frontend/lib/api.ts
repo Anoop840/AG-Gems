@@ -50,6 +50,25 @@ export const getToken = (): string | null => {
   return null;
 };
 
+let csrfToken: string | null = null;
+
+const fetchCsrfToken = async () => {
+  if (typeof window !== 'undefined' && !csrfToken) {
+    try {
+      const res = await fetch(`${API_URL}/csrf-token`);
+      const data = await res.json();
+      csrfToken = data.csrfToken;
+    } catch (error) {
+      console.error('Failed to fetch CSRF token', error);
+    }
+  }
+};
+
+// Fetch CSRF token on initial load
+if (typeof window !== 'undefined') {
+  fetchCsrfToken();
+}
+
 // Set token in localStorage
 export const setToken = (token: string): void => {
   if (typeof window !== 'undefined') {
@@ -87,6 +106,7 @@ export const apiRequest = async <T>(
   options: RequestInit = {}
 ): Promise<T> => {
   const token = getToken();
+  await fetchCsrfToken(); // Ensure CSRF token is available
   // 1. Initialize as a new Headers object, passing in any existing headers.
   //    This constructor correctly handles all parts of the HeadersInit type.
   const headers = new Headers(options.headers);
@@ -95,6 +115,10 @@ export const apiRequest = async <T>(
   //    Using .set() avoids duplicates.
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  if (csrfToken) {
+    headers.set('X-CSRF-Token', csrfToken);
   }
 
   // 3. Use the .set() method to safely add the Authorization header.

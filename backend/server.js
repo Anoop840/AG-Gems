@@ -1,9 +1,12 @@
 // backend/server.js
+require("express-async-errors");
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
+const csrf = require("csurf");
 
 // Ensure environment variables are loaded
 dotenv.config({ path: "./.env" });
@@ -12,13 +15,42 @@ dotenv.config({ path: "./.env" });
 const connectDB = require("./db");
 connectDB(); // Connect to MongoDB
 
+// Start cron jobs
+if (process.env.NODE_ENV !== "test") {
+  require("./jobs/inventoryAlerts");
+  require("./jobs/priceUpdater");
+}
+
 const app = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000" }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 app.use(morgan("dev"));
+
+// CSRF Protection
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+    sameSite: "strict",
+  },
+});
+
+// Apply CSRF protection to all state-changing routes
+app.use(csrfProtection);
+
+// Route to get CSRF token
+app.get("/api/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 // Import Routes (Ensure all route files are correctly updated to CommonJS)
 app.use("/api/auth", require("./routes/auth"));
