@@ -1,28 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-
+const upload = require("../middleware/upload");
 const { protect, authorize } = require("../middleware/auth");
 const {
   visionSearch,
   uploadSingleImage,
   uploadMultipleImages,
   deleteImage,
-} = require("../controllers/uploadController");
-
-// Multer configuration
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only images are allowed"), false);
-    }
-  },
-});
+} = require("../controllers/upload.controller");
 
 // Vision search
 router.post("/vision-search", visionSearch);

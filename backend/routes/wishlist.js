@@ -6,7 +6,7 @@ const {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
-} = require("../controllers/wishlistController");
+} = require("../controllers/wishlist.controller");
 
 // Get wishlist
 router.get("/", protect, getWishlist);

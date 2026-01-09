@@ -6,7 +6,7 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
-} = require("../controllers/category.controller");
+} = require("../controllers/categories.controllers");
 const { protect, authorize } = require("../middleware/auth");
 
 // Public routes

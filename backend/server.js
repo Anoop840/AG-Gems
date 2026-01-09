@@ -6,7 +6,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const csrf = require("csurf");
+const errorHandler = require("./middleware/error");
 
 // Ensure environment variables are loaded
 dotenv.config({ path: "./.env" });
@@ -35,32 +35,19 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// CSRF Protection
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-  },
-});
-
-// Route to get CSRF token (must be BEFORE CSRF protection middleware)
-app.get("/api/csrf-token", csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
-
-// Apply CSRF protection to all state-changing routes (POST, PUT, DELETE, PATCH)
+// Middleware to protect against CSRF.
+// For APIs, a common strategy is to ensure that state-changing requests
+// only accept JSON. This prevents traditional form-based CSRF attacks.
 app.use((req, res, next) => {
-  // Skip CSRF for GET and HEAD requests
-  if (
-    req.method === "GET" ||
-    req.method === "HEAD" ||
-    req.method === "OPTIONS"
-  ) {
-    return next();
+  const nonJsonMethods = ["POST", "PUT", "PATCH", "DELETE"];
+  if (nonJsonMethods.includes(req.method) && !req.is("application/json")) {
+    return res.status(415).json({
+      success: false,
+      message:
+        "Unsupported Media Type: All state-changing requests must use Content-Type: application/json.",
+    });
   }
-  // Apply CSRF protection for state-changing methods
-  csrfProtection(req, res, next);
+  next();
 });
 
 // Import Routes (Ensure all route files are correctly updated to CommonJS)
@@ -73,6 +60,8 @@ app.use("/api/payment", require("./routes/payment"));
 app.use("/api/upload", require("./routes/upload"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/wishlist", require("./routes/wishlist"));
+
+app.use(errorHandler);
 
 // Basic Health Check Route
 app.get("/api/health", (req, res) => {

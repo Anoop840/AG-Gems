@@ -6,9 +6,9 @@ const {
   getOrderById,
   updateOrderStatus,
   getAllOrders,
-} = require("../controllers/order.controller.js");
+} = require("../controllers/order.controller");
 
-const { protect, authorize } = require("../middleware/auth.js");
+const { protect, authorize } = require("../middleware/auth");
 
 router.use(protect);
 
@@ -19,3 +19,5 @@ router.get("/:id", getOrderById);
 // Admin only routes
 router.get("/", authorize("admin"), getAllOrders);
 router.put("/:id/status", authorize("admin"), updateOrderStatus);
+
+module.exports = router;

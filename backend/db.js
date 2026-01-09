@@ -1,5 +1,5 @@
 // backend/db.js
-const mongoose = require('mongoose'); // Change: Use require
+const mongoose = require("mongoose"); // Change: Use require
 
 let cached = global.mongoose;
 
@@ -16,24 +16,26 @@ async function connectDB() {
     const opts = {
       bufferCommands: false,
       // Add standard options for Express setup
-      useNewUrlParser: true, 
+      useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 10000,
     };
 
-    cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose
+      .connect(process.env.MONGODB_URI, opts)
+      .then((mongoose) => {
+        return mongoose;
+      });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
     throw e;
   }
-  console.log("Database connected")
+  console.log("Database connected");
   return cached.conn;
 }
 

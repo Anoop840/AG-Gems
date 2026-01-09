@@ -9,7 +9,7 @@ const {
   addAddress,
   updateAddress,
   deleteAddress,
-} = require("../controllers/userController");
+} = require("../controllers/user.controller");
 
 // Profile
 router.put("/profile", protect, updateProfile);

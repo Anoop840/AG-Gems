@@ -1,4 +1,3 @@
-const cloudinary = require("cloudinary").v2;
 const Product = require("../models/Product");
 const cloudinary = require("../config/cloudinary");
 

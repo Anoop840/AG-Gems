@@ -1,17 +1,13 @@
-// backend/scripts/seed.js (NEW FILE)
-
-const mongoose = require("mongoose"); // Use require for CommonJS
+const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
-// Load models using correct CommonJS syntax and paths (relative to backend/scripts)
+const connectDB = require("../config/db.js");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const User = require("../models/User");
 
-// Load environment variables (essential for MONGODB_URI)
 dotenv.config();
 
-// --- START: Copy of data structures from original seed.js ---
 const categories = [
   {
     name: "Rings",
@@ -54,21 +50,12 @@ const categoryImages = {
 };
 
 const ADMIN_EMAIL = "admin@jewelry.com";
-// --- END: Copy of data structures from original seed.js ---
 
 const seedDatabase = async () => {
   try {
     const shouldReset = process.argv.includes("--reset");
-    // NOTE: MongoDB URI is read from the .env file created in the previous step
-    const mongoUri =
-      process.env.MONGODB_URI || "mongodb://localhost:27017/jewelry-store";
 
-    await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-    });
-    console.log("Connected to MongoDB");
+    await connectDB();
 
     if (shouldReset) {
       await Promise.all([
@@ -81,7 +68,6 @@ const seedDatabase = async () => {
       console.log("Safe mode: existing data will be preserved");
     }
 
-    // Upsert default categories... (rest of the seeding logic remains the same)
     await Category.bulkWrite(
       categories.map((category) => ({
         updateOne: {
@@ -100,7 +86,6 @@ const seedDatabase = async () => {
     }
     console.log("Categories ensured");
 
-    // Ensure admin user exists
     let adminUser = await User.findOne({ email: ADMIN_EMAIL });
 
     if (!adminUser) {
