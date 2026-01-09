@@ -1,17 +1,18 @@
-const express = require("express");
-const router = express.Router();
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-const Order = require("../models/Order");
-const { protect } = require("../middleware/auth");
 const axios = require("axios");
+const Order = require("../models/Order");
 
+// Initialize Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
-// Create Razorpay order
-router.post("/create-order", protect, async (req, res) => {
+
+// @desc    Create Razorpay order
+// @route   POST /api/payment/create-order
+// @access  Private
+exports.createRazorpayOrder = async (req, res) => {
   try {
     const { amount, orderId } = req.body;
 
@@ -32,9 +33,48 @@ router.post("/create-order", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
-// --- NEW CRYPTO VERIFY ROUTE ---
-router.post("/verify-crypto", protect, async (req, res) => {
+};
+
+// @desc    Verify Razorpay payment
+// @route   POST /api/payment/verify
+// @access  Private
+exports.verifyRazorpayPayment = async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      orderId,
+    } = req.body;
+
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest("hex");
+
+    if (razorpay_signature === expectedSign) {
+      // Payment verified
+      await Order.findByIdAndUpdate(orderId, {
+        paymentStatus: "paid",
+        "paymentDetails.transactionId": razorpay_payment_id,
+        "paymentDetails.paidAt": Date.now(),
+        orderStatus: "confirmed",
+      });
+
+      res.json({ success: true, message: "Payment verified successfully" });
+    } else {
+      res.status(400).json({ success: false, message: "Invalid signature" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify crypto payment
+// @route   POST /api/payment/verify-crypto
+// @access  Private
+exports.verifyCryptoPayment = async (req, res) => {
   try {
     // These values are sent from the frontend after the wallet transaction is complete
     const { orderId, txHash, amountPaid, currency } = req.body;
@@ -107,66 +147,12 @@ router.post("/verify-crypto", protect, async (req, res) => {
       message: error.message || "Error processing crypto verification",
     });
   }
-});
-// Create Razorpay order
-router.post("/create-order", protect, async (req, res) => {
-  try {
-    const { amount, orderId } = req.body;
+};
 
-    const options = {
-      amount: amount * 100, // amount in paise
-      currency: "INR",
-      receipt: orderId,
-    };
-
-    const razorpayOrder = await razorpay.orders.create(options);
-
-    res.json({
-      success: true,
-      orderId: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Verify payment
-router.post("/verify", protect, async (req, res) => {
-  try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      orderId,
-    } = req.body;
-
-    const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(sign.toString())
-      .digest("hex");
-
-    if (razorpay_signature === expectedSign) {
-      // Payment verified
-      await Order.findByIdAndUpdate(orderId, {
-        paymentStatus: "paid",
-        "paymentDetails.transactionId": razorpay_payment_id,
-        "paymentDetails.paidAt": Date.now(),
-        orderStatus: "confirmed",
-      });
-
-      res.json({ success: true, message: "Payment verified successfully" });
-    } else {
-      res.status(400).json({ success: false, message: "Invalid signature" });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-router.get("/exchange-rate", async (req, res) => {
+// @desc    Get crypto exchange rate (INR to ETH)
+// @route   GET /api/payment/exchange-rate
+// @access  Public
+exports.getExchangeRate = async (req, res) => {
   try {
     // 1. Fetch the market price from CoinGecko (ETH price in INR)
     const response = await axios.get(
@@ -200,5 +186,4 @@ router.get("/exchange-rate", async (req, res) => {
       message: "Error fetching real-time crypto rate.",
     });
   }
-});
-module.exports = router;
+};

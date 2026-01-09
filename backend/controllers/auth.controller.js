@@ -1,25 +1,12 @@
-const express = require("express");
-const router = express.Router();
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const rateLimit = require("express-rate-limit");
 const User = require("../models/User");
-const { protect } = require("../middleware/auth");
 const { sendPasswordReset } = require("../utils/emailService");
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login requests per windowMs
-  message: {
-    success: false,
-    message:
-      "Too many login attempts from this IP, please try again after 15 minutes",
-  },
-  standardHeaders: true, // Return rate limit info in the headers
-  legacyHeaders: false, // Disable the X-RateLimit- and Retry-After headers
-});
-// Register
-router.post("/register", async (req, res) => {
+// @desc    Register user
+// @route   POST /api/auth/register
+// @access  Public
+exports.register = async (req, res) => {
   try {
     const { firstName, lastName, email, password, phone } = req.body;
 
@@ -56,10 +43,12 @@ router.post("/register", async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Login
-router.post("/login", loginLimiter, async (req, res) => {
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -88,20 +77,24 @@ router.post("/login", loginLimiter, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Get current user
-router.get("/me", protect, async (req, res) => {
+// @desc    Get current user
+// @route   GET /api/auth/me
+// @access  Private
+exports.getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Forgot password
-router.post("/forgot-password", async (req, res) => {
+// @desc    Forgot password
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -137,10 +130,12 @@ router.post("/forgot-password", async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Reset password
-router.post("/reset-password/:token", async (req, res) => {
+// @desc    Reset password
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+exports.resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
@@ -187,6 +182,4 @@ router.post("/reset-password/:token", async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
-
-module.exports = router;
+};

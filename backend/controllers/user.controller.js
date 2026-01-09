@@ -1,14 +1,12 @@
-const express = require("express");
-const router = express.Router();
-const User = require("../models/User"); // Corrected path to use '../models/User'
-const { protect } = require("../middleware/auth");
+const User = require("../models/User");
 
-// Update profile
-router.put("/profile", protect, async (req, res) => {
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateProfile = async (req, res) => {
   try {
     const { firstName, lastName, phone } = req.body;
 
-    // IMPORTANT: Exclude walletAddress here, use a dedicated route for security
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { firstName, lastName, phone },
@@ -19,10 +17,12 @@ router.put("/profile", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// --- NEW ROUTE TO LINK WALLET ADDRESS ---
-router.put("/link-wallet", protect, async (req, res) => {
+// @desc    Link wallet address
+// @route   PUT /api/users/link-wallet
+// @access  Private
+const linkWallet = async (req, res) => {
   try {
     const { walletAddress } = req.body;
 
@@ -32,15 +32,15 @@ router.put("/link-wallet", protect, async (req, res) => {
         .json({ success: false, message: "Wallet address is required" });
     }
 
-    // Check if the address is already linked to another user
-    const existingUser = await User.findOne({ walletAddress });
+    const existingUser = await User.findOne({
+      walletAddress: walletAddress.toLowerCase(),
+    });
+
     if (existingUser && existingUser._id.toString() !== req.user.id) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "This wallet address is already linked to another account",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "This wallet address is already linked to another account",
+      });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -63,10 +63,12 @@ router.put("/link-wallet", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Remove wallet address
-router.put("/unlink-wallet", protect, async (req, res) => {
+// @desc    Unlink wallet address
+// @route   PUT /api/users/unlink-wallet
+// @access  Private
+const unlinkWallet = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -88,11 +90,12 @@ router.put("/unlink-wallet", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
-// ---------------------------------------------
+};
 
-// Add address
-router.post("/addresses", protect, async (req, res) => {
+// @desc    Add address
+// @route   POST /api/users/addresses
+// @access  Private
+const addAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -107,10 +110,12 @@ router.post("/addresses", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Update address
-router.put("/addresses/:addressId", protect, async (req, res) => {
+// @desc    Update address
+// @route   PUT /api/users/addresses/:addressId
+// @access  Private
+const updateAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const address = user.addresses.id(req.params.addressId);
@@ -132,21 +137,32 @@ router.put("/addresses/:addressId", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Delete address
-router.delete("/addresses/:addressId", protect, async (req, res) => {
+// @desc    Delete address
+// @route   DELETE /api/users/addresses/:addressId
+// @access  Private
+const deleteAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+
     user.addresses = user.addresses.filter(
       (addr) => addr._id.toString() !== req.params.addressId
     );
+
     await user.save();
 
     res.json({ success: true, addresses: user.addresses });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  updateProfile,
+  linkWallet,
+  unlinkWallet,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+};

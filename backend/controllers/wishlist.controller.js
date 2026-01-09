@@ -1,10 +1,9 @@
-const express = require("express");
-const router = express.Router();
 const User = require("../models/User");
-const { protect } = require("../middleware/auth");
 
-// Get wishlist
-router.get("/", protect, async (req, res) => {
+// @desc    Get user wishlist
+// @route   GET /api/wishlist
+// @access  Private
+const getWishlist = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate({
       path: "wishlist",
@@ -12,14 +11,22 @@ router.get("/", protect, async (req, res) => {
       select: "name price images rating category",
     });
 
-    res.json({ success: true, wishlist: user.wishlist });
+    res.json({
+      success: true,
+      wishlist: user.wishlist,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-});
+};
 
-// Add to wishlist
-router.post("/add/:productId", protect, async (req, res) => {
+// @desc    Add product to wishlist
+// @route   POST /api/wishlist/add/:productId
+// @access  Private
+const addToWishlist = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -39,20 +46,29 @@ router.post("/add/:productId", protect, async (req, res) => {
       select: "name price images rating category",
     });
 
-    res.json({ success: true, wishlist: user.wishlist });
+    res.json({
+      success: true,
+      wishlist: user.wishlist,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-});
+};
 
-// Remove from wishlist
-router.delete("/remove/:productId", protect, async (req, res) => {
+// @desc    Remove product from wishlist
+// @route   DELETE /api/wishlist/remove/:productId
+// @access  Private
+const removeFromWishlist = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
     user.wishlist = user.wishlist.filter(
       (id) => id.toString() !== req.params.productId
     );
+
     await user.save();
 
     await user.populate({
@@ -61,10 +77,20 @@ router.delete("/remove/:productId", protect, async (req, res) => {
       select: "name price images rating category",
     });
 
-    res.json({ success: true, wishlist: user.wishlist });
+    res.json({
+      success: true,
+      wishlist: user.wishlist,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist,
+};

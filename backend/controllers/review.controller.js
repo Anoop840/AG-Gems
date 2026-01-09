@@ -1,18 +1,15 @@
-// backend/routes/reviews.js
-const express = require("express"); // Change: Use require for express
-const router = express.Router();
-// Change: Use require for model and middleware paths
 const Review = require("../models/Review");
 const Product = require("../models/Product");
-const { protect } = require("../middleware/auth");
 
-// POST /api/reviews - Create a new review
-router.post("/", protect, async (req, res) => {
+// @desc    Create a new review
+// @route   POST /api/reviews
+// @access  Private
+const createReview = async (req, res) => {
   try {
-    const user = req.user; // User is attached by the Express middleware 'protect'
+    const user = req.user; // attached by protect middleware
     const { product, rating, title, comment, images } = req.body;
 
-    // Check if user already reviewed
+    // Check if user already reviewed this product
     const existingReview = await Review.findOne({
       user: user._id,
       product,
@@ -20,12 +17,12 @@ router.post("/", protect, async (req, res) => {
 
     if (existingReview) {
       return res.status(400).json({
-        // Change: Use Express res.status().json()
         success: false,
         message: "You have already reviewed this product",
       });
     }
 
+    // Create review
     const review = await Review.create({
       user: user._id,
       product,
@@ -35,8 +32,9 @@ router.post("/", protect, async (req, res) => {
       images,
     });
 
-    // Update product rating (Logic preserved from original file)
+    // Recalculate average rating (approved reviews only)
     const reviews = await Review.find({ product, isApproved: true });
+
     const avgRating =
       reviews.length > 0
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
@@ -47,10 +45,18 @@ router.post("/", protect, async (req, res) => {
       reviewCount: reviews.length,
     });
 
-    return res.status(201).json({ success: true, review }); // Change: Use Express res.status().json()
+    return res.status(201).json({
+      success: true,
+      review,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-});
+};
 
-module.exports = router; // Change: Use CommonJS export
+module.exports = {
+  createReview,
+};

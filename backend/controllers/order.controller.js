@@ -1,12 +1,11 @@
-const express = require("express");
-const router = express.Router();
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
-const { protect, authorize } = require("../middleware/auth");
 
-// Create order
-router.post("/", protect, async (req, res) => {
+// @desc    Create new order
+// @route   POST /api/orders
+// @access  Private
+exports.createOrder = async (req, res) => {
   try {
     const { items, shippingAddress, billingAddress, paymentMethod } = req.body;
 
@@ -71,10 +70,12 @@ router.post("/", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Get user orders
-router.get("/my-orders", protect, async (req, res) => {
+// @desc    Get user's orders
+// @route   GET /api/orders/my-orders
+// @access  Private
+exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id })
       .populate("items.product", "name images")
@@ -84,10 +85,12 @@ router.get("/my-orders", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Get single order
-router.get("/:id", protect, async (req, res) => {
+// @desc    Get single order by ID
+// @route   GET /api/orders/:id
+// @access  Private
+exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate(
       "items.product",
@@ -111,10 +114,12 @@ router.get("/:id", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Update order status (Admin only)
-router.put("/:id/status", protect, authorize("admin"), async (req, res) => {
+// @desc    Update order status
+// @route   PUT /api/orders/:id/status
+// @access  Private/Admin
+exports.updateOrderStatus = async (req, res) => {
   try {
     const { status, note } = req.body;
 
@@ -138,10 +143,12 @@ router.put("/:id/status", protect, authorize("admin"), async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Get all orders (Admin only)
-router.get("/", protect, authorize("admin"), async (req, res) => {
+// @desc    Get all orders with filters
+// @route   GET /api/orders
+// @access  Private/Admin
+exports.getAllOrders = async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
 
@@ -169,6 +176,4 @@ router.get("/", protect, authorize("admin"), async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
-
-module.exports = router;
+};

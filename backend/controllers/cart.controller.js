@@ -1,11 +1,10 @@
-const express = require("express");
-const router = express.Router();
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
-const { protect } = require("../middleware/auth");
 
-// Get user cart
-router.get("/", protect, async (req, res) => {
+// @desc    Get user cart
+// @route   GET /api/cart
+// @access  Private
+exports.getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.id }).populate(
       "items.product",
@@ -25,10 +24,12 @@ router.get("/", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Add to cart
-router.post("/add", protect, async (req, res) => {
+// @desc    Add item to cart
+// @route   POST /api/cart/add
+// @access  Private
+exports.addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
 
@@ -72,10 +73,12 @@ router.post("/add", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Update cart item quantity
-router.put("/update/:itemId", protect, async (req, res) => {
+// @desc    Update cart item quantity
+// @route   PUT /api/cart/update/:itemId
+// @access  Private
+exports.updateCartItem = async (req, res) => {
   try {
     const { quantity } = req.body;
 
@@ -108,10 +111,12 @@ router.put("/update/:itemId", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Remove from cart
-router.delete("/remove/:itemId", protect, async (req, res) => {
+// @desc    Remove item from cart
+// @route   DELETE /api/cart/remove/:itemId
+// @access  Private
+exports.removeFromCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
@@ -131,10 +136,12 @@ router.delete("/remove/:itemId", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// Clear cart
-router.delete("/clear", protect, async (req, res) => {
+// @desc    Clear cart
+// @route   DELETE /api/cart/clear
+// @access  Private
+exports.clearCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user.id });
     if (cart) {
@@ -146,6 +153,4 @@ router.delete("/clear", protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
-
-module.exports = router;
+};
