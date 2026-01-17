@@ -99,11 +99,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new CustomEvent('cartUpdated'));
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update quantity',
-        variant: 'destructive',
-      });
       throw error;
     }
   };
@@ -120,11 +115,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new CustomEvent('cartUpdated'));
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to remove item',
-        variant: 'destructive',
-      });
       throw error;
     }
   };

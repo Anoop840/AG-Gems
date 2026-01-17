@@ -8,13 +8,10 @@ const {
   removeFromWishlist,
 } = require("../controllers/wishlist.controller");
 
-// Get wishlist
 router.get("/", protect, getWishlist);
 
-// Add to wishlist
 router.post("/add/:productId", protect, addToWishlist);
 
-// Remove from wishlist
 router.delete("/remove/:productId", protect, removeFromWishlist);
 
 module.exports = router;

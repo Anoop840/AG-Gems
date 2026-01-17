@@ -114,17 +114,18 @@ export const apiRequest = async <T>(
   //    This constructor correctly handles all parts of the HeadersInit type.
   const headers = new Headers(options.headers);
 
-  // 2. Set the Content-Type if it's not already set.
-  //    Using .set() avoids duplicates.
-  if (!headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
+  const method = options.method?.toUpperCase() || 'GET';
+
+  // Set Content-Type for state-changing requests
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
   }
 
   if (csrfToken) {
     headers.set('X-CSRF-Token', csrfToken);
   }
-
-  // 3. Use the .set() method to safely add the Authorization header.
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }

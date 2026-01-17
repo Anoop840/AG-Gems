@@ -9,10 +9,8 @@ const {
   deleteImage,
 } = require("../controllers/upload.controller");
 
-// Vision search
 router.post("/vision-search", visionSearch);
 
-// Upload single image
 router.post(
   "/image",
   protect,
@@ -21,7 +19,6 @@ router.post(
   uploadSingleImage
 );
 
-// Upload multiple images
 router.post(
   "/images",
   protect,
@@ -30,7 +27,6 @@ router.post(
   uploadMultipleImages
 );
 
-// Delete image
 router.delete("/image/:publicId", protect, authorize("admin"), deleteImage);
 
 module.exports = router;

@@ -40,12 +40,15 @@ app.use(morgan("dev"));
 // only accept JSON. This prevents traditional form-based CSRF attacks.
 app.use((req, res, next) => {
   const nonJsonMethods = ["POST", "PUT", "PATCH", "DELETE"];
-  if (nonJsonMethods.includes(req.method) && !req.is("application/json")) {
-    return res.status(415).json({
-      success: false,
-      message:
-        "Unsupported Media Type: All state-changing requests must use Content-Type: application/json.",
-    });
+  if (nonJsonMethods.includes(req.method)) {
+    const contentType = req.get("Content-Type");
+    if (!contentType || !contentType.includes("application/json")) {
+      return res.status(415).json({
+        success: false,
+        message:
+          "Unsupported Media Type: All state-changing requests must use Content-Type: application/json.",
+      });
+    }
   }
   next();
 });

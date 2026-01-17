@@ -9,10 +9,8 @@ const {
 } = require("../controllers/cart.controller");
 const { protect } = require("../middleware/auth");
 
-// All cart routes are protected
 router.use(protect);
 
-// Cart routes
 router.get("/", getCart);
 router.post("/add", addToCart);
 router.put("/update/:itemId", updateCartItem);

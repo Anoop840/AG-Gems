@@ -3,6 +3,17 @@ const crypto = require("crypto");
 const User = require("../models/User");
 const { sendPasswordReset } = require("../utils/emailService");
 
+// Helper to filter user object for responses
+const sanitizeUser = (user) => {
+  return {
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    role: user.role,
+  };
+};
+
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
@@ -32,13 +43,7 @@ exports.register = async (req, res) => {
     res.status(201).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-      },
+      user: sanitizeUser(user),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -66,13 +71,7 @@ exports.login = async (req, res) => {
     res.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-      },
+      user: sanitizeUser(user),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -171,13 +170,7 @@ exports.resetPassword = async (req, res) => {
       success: true,
       message: "Password reset successful",
       token: jwtToken,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-      },
+      user: sanitizeUser(user),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
