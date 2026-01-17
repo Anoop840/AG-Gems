@@ -29,6 +29,29 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({ success: false, message: "Invalid token" });
   }
 
+  if (err.name === "TokenExpiredError") {
+    return res.status(401).json({ success: false, message: "Token expired" });
+  }
+
+  // Axios/Network Errors
+  if (err.isAxiosError) {
+    const message =
+      err.response?.data?.message || "External API request failed";
+    return res
+      .status(err.response?.status || 500)
+      .json({ success: false, message });
+  }
+
+  // Razorpay Errors
+  if (err.error && err.error.code) {
+    return res.status(400).json({
+      success: false,
+      message: `Payment error: ${
+        err.error.description || "Transaction failed"
+      }`,
+    });
+  }
+
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || "Server Error",

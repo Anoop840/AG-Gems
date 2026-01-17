@@ -66,6 +66,13 @@ app.use("/api/wishlist", require("./routes/wishlist"));
 
 app.use(errorHandler);
 
+// CSRF Token Endpoint
+app.get("/api/csrf-token", (req, res) => {
+  // Generate a simple CSRF token (in production, use a proper CSRF library like csurf)
+  const csrfToken = require("crypto").randomBytes(32).toString("hex");
+  res.json({ csrfToken });
+});
+
 // Basic Health Check Route
 app.get("/api/health", (req, res) => {
   res.json({ success: true, message: "API is running" });

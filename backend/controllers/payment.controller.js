@@ -2,6 +2,10 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const axios = require("axios");
 const Order = require("../models/Order");
+const {
+  verifyEthereumTransaction,
+  isBlockchainServiceAvailable,
+} = require("../utils/blockchainService");
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -54,15 +58,30 @@ exports.verifyRazorpayPayment = async (req, res) => {
       .digest("hex");
 
     if (razorpay_signature === expectedSign) {
-      // Payment verified
-      await Order.findByIdAndUpdate(orderId, {
-        paymentStatus: "paid",
-        "paymentDetails.transactionId": razorpay_payment_id,
-        "paymentDetails.paidAt": Date.now(),
-        orderStatus: "confirmed",
-      });
+      // Payment verified - update order with proper error handling
+      const order = await Order.findByIdAndUpdate(
+        orderId,
+        {
+          paymentStatus: "paid",
+          "paymentDetails.transactionId": razorpay_payment_id,
+          "paymentDetails.paidAt": Date.now(),
+          orderStatus: "confirmed",
+        },
+        { new: true, runValidators: true }
+      );
 
-      res.json({ success: true, message: "Payment verified successfully" });
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found - payment verified but order update failed",
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Payment verified successfully",
+        order,
+      });
     } else {
       res.status(400).json({ success: false, message: "Invalid signature" });
     }
@@ -104,41 +123,101 @@ exports.verifyCryptoPayment = async (req, res) => {
       });
     }
 
-    // --- CRITICAL: REAL BLOCKCHAIN VERIFICATION NEEDED HERE ---
+    // --- BLOCKCHAIN VERIFICATION ---
+    let isVerified = false;
+    let verificationDetails = null;
 
-    // ⚠️ WARNING: The code below is a MOCK implementation for demo only!
-    // ⚠️ DO NOT USE IN PRODUCTION WITHOUT IMPLEMENTING REAL BLOCKCHAIN VERIFICATION.
+    // Check if blockchain service is available and properly configured
+    const serviceAvailable = await isBlockchainServiceAvailable();
 
-    // 1. Initialize Ethers Provider (Requires installing 'ethers' on the backend: npm install ethers)
-    /*
-    const provider = new providers.JsonRpcProvider(process.env.ETH_RPC_URL || MOCK_ETH_RPC_URL);
-    const txReceipt = await provider.waitForTransaction(txHash);
-    
-    if (!txReceipt || txReceipt.status !== 1) {
-      return res.status(400).json({ success: false, message: 'Blockchain transaction failed or not found' });
+    if (serviceAvailable && process.env.NODE_ENV === "production") {
+      try {
+        console.log(`Verifying blockchain transaction: ${txHash}`);
+
+        // Verify the transaction on the blockchain
+        const result = await verifyEthereumTransaction(
+          txHash,
+          process.env.PAYMENT_WALLET_ADDRESS,
+          null // We'll verify amount based on order total separately
+        );
+
+        if (!result.verified) {
+          return res.status(400).json({
+            success: false,
+            message: result.message || "Transaction verification failed",
+            details: result,
+          });
+        }
+
+        isVerified = true;
+        verificationDetails = result;
+        console.log("✅ Transaction verified on blockchain");
+      } catch (error) {
+        console.error("Blockchain verification error:", error);
+        return res.status(400).json({
+          success: false,
+          message: "Failed to verify transaction on blockchain",
+          error: error.message,
+        });
+      }
+    } else if (process.env.NODE_ENV !== "production") {
+      // Development/Demo mode - mock verification
+      console.warn("⚠️ Demo mode: Using mock blockchain verification");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      isVerified = true;
+      verificationDetails = {
+        verified: true,
+        message: "Mock verification (development mode)",
+        transactionHash: txHash,
+      };
+    } else {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Blockchain verification service not configured. Please contact support.",
+      });
     }
-    
-    // 2. Verify Recipient and Amount (Requires complex logic/price feed)
-    // For now, we trust the transaction was successful and update the DB.
-    */
 
-    // --- START MOCK IMPLEMENTATION (TEMPORARY FOR DEMO) ---
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network latency
-    // --- END MOCK IMPLEMENTATION ---
+    if (!isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Transaction verification failed",
+      });
+    }
 
     // Safely proceed to update the order status as verified
-    await Order.findByIdAndUpdate(orderId, {
-      paymentStatus: "paid",
-      orderStatus: "confirmed",
-      "paymentDetails.transactionId": txHash,
-      "paymentDetails.paidAt": Date.now(),
-      "paymentDetails.currency": currency,
-      "paymentDetails.amountPaid": amountPaid,
-    });
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        paymentStatus: "paid",
+        orderStatus: "confirmed",
+        "paymentDetails.transactionId": txHash,
+        "paymentDetails.paidAt": Date.now(),
+        "paymentDetails.currency": currency,
+        "paymentDetails.amountPaid": amountPaid,
+        "paymentDetails.blockchainVerified": isVerified,
+        "paymentDetails.verificationDetails": verificationDetails
+          ? JSON.stringify({
+              blockNumber: verificationDetails.blockNumber,
+              confirmations: verificationDetails.confirmations,
+              from: verificationDetails.from,
+            })
+          : undefined,
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found - payment verified but order update failed",
+      });
+    }
 
     res.json({
       success: true,
       message: "Crypto payment verified and order confirmed",
+      order: updatedOrder,
     });
   } catch (error) {
     console.error("Crypto Verification Error:", error.message);
@@ -180,10 +259,11 @@ exports.getExchangeRate = async (req, res) => {
     });
   } catch (error) {
     console.error("Exchange Rate API Error:", error.message);
-    // Fallback or error status
-    res.status(500).json({
+    // Fallback or error status with consistent response format
+    return res.status(500).json({
       success: false,
       message: "Error fetching real-time crypto rate.",
+      error: error.message,
     });
   }
 };

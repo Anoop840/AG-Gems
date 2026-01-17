@@ -540,7 +540,7 @@ export const productAPI = {
     return apiRequest<ProductsResponse>(`/products${queryString ? `?${queryString}` : ''}`);
   },
   getSuggestions: async (query: string): Promise<{ success: boolean; suggestions: Product[] }> => {
-    return apiRequest(`/${endpoint}/search/suggestions?q=${query}`);
+    return apiRequest(`/products/search/suggestions?q=${encodeURIComponent(query)}`);
   },
 
   getRelatedProducts: async (id: string): Promise<ProductsResponse> => {

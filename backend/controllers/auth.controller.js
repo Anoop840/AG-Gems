@@ -11,6 +11,8 @@ const sanitizeUser = (user) => {
     lastName: user.lastName,
     email: user.email,
     role: user.role,
+    phone: user.phone,
+    walletAddress: user.walletAddress || null,
   };
 };
 

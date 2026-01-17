@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     walletAddress: { type: String, unique: true, sparse: true, default: null },
+    isActive: { type: Boolean, default: true, select: false },
     addresses: [
       {
         fullName: String,
@@ -35,11 +36,11 @@ const userSchema = new mongoose.Schema(
       },
     ],
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
+    resetPasswordToken: { type: String, select: false },
+    resetPasswordExpire: { type: Date, select: false },
     isVerified: { type: Boolean, default: false },
-    verificationToken: String,
-    passwordChangedAt: Date,
+    verificationToken: { type: String, select: false },
+    passwordChangedAt: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -53,7 +54,9 @@ userSchema.pre("save", async function (next) {
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password") || this.isNew) return next();
 
-  this.passwordChangedAt = Date.now() - 1000; // ensure token is created after password is changed
+  // Set passwordChangedAt to current time
+  // Tokens issued before this time will be invalid
+  this.passwordChangedAt = new Date();
   next();
 });
 

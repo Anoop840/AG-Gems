@@ -22,8 +22,10 @@ exports.protect = async (req, res, next) => {
     // 1. Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 2. Check if user still exists
-    const currentUser = await User.findById(decoded.id);
+    // 2. Check if user still exists and is active
+    const currentUser = await User.findById(decoded.id).select(
+      "+isActive +passwordChangedAt"
+    );
     if (!currentUser) {
       return res.status(401).json({
         success: false,
@@ -31,14 +33,21 @@ exports.protect = async (req, res, next) => {
       });
     }
 
+    // Check if user is active
+    if (!currentUser.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "This account has been deactivated.",
+      });
+    }
+
     // 3. Check if user changed password after the token was issued
     if (currentUser.passwordChangedAt) {
-      const changedTimestamp = parseInt(
-        currentUser.passwordChangedAt.getTime() / 1000,
-        10
-      );
+      // Convert token issued at time to milliseconds for accurate comparison
+      const tokenIssuedAt = decoded.iat * 1000;
+      const passwordChangedTime = currentUser.passwordChangedAt.getTime();
 
-      if (decoded.iat < changedTimestamp) {
+      if (tokenIssuedAt < passwordChangedTime) {
         return res.status(401).json({
           success: false,
           message: "User recently changed password. Please log in again.",
