@@ -2,7 +2,7 @@
 
 AG-Gems is a premium, full-stack luxury jewelry e-commerce platform that blends traditional high-end retail with modern blockchain technology. Built using the **MERN stack** and integrated with **Ethereum**, AG-Gems allows users to browse exquisite gemstones and complete purchases using either traditional payment gateways or cryptocurrency.
 
-![Project Screenshot](./frontend/public/screenshots/1.png)
+![Project Screenshot](./frontend/public/screenshots/2.png)
 
 ## 🚀 Features
 
