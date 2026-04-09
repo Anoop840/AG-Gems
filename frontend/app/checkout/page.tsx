@@ -55,17 +55,6 @@ const CRYPTO_OPTIONS: { [key: string]: CryptoPaymentOption } = {
 };
 
 // --- INTERFACE DEFINITIONS (Moved here to avoid collision) ---
-interface RazorpayOrderResponse {
-  success: boolean;
-  orderId: string;
-  amount: number;
-  currency: string;
-}
-
-interface VerifyPaymentResponse {
-  success: boolean;
-  message: string;
-}
 // -----------------------------------------------------------------
 
 export default function CheckoutPage() {
@@ -239,8 +228,13 @@ export default function CheckoutPage() {
           })
         });
 
+        const razorpayKey = (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "").trim();
+        if (!razorpayKey) {
+          throw new Error("Razorpay key is missing in frontend environment configuration.");
+        }
+
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          key: razorpayKey,
           amount: amount,
           currency: "INR",
           name: "AG Gems",
@@ -269,6 +263,11 @@ export default function CheckoutPage() {
           prefill: {
             name: `${firstName} ${lastName}`,
             email: email,
+            contact: user?.phone || "",
+          },
+          notes: {
+            appOrderId: dbOrder._id,
+            customerName: `${firstName} ${lastName}`,
           },
           theme: {
             color: "#3399cc"

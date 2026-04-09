@@ -7,6 +7,7 @@ import { CartProvider } from "@/context/CartContext"
 import { WalletProvider } from "@/context/WalletConnect" // IMPORT NEW CONTEXT
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
+import Script from "next/script"
 
 const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
@@ -26,23 +27,19 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${poppins.variable}`}>
       <body className="font-sans antialiased">
-        {/* FIX: WalletProvider must wrap AuthProvider because AuthProvider uses useWallet() */}
-        <WalletProvider> 
+        <WalletProvider>
           <AuthProvider>
             <CartProvider>
-                {children}
-                <Toaster />
+              {children}
+              <Toaster />
             </CartProvider>
           </AuthProvider>
         </WalletProvider>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
         <Analytics />
       </body>
     </html>

@@ -1,4 +1,15 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const normalizeApiUrl = (baseUrl: string) => {
+  const trimmed = baseUrl.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+
+const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
 
 export interface User {
   id: string;

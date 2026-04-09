@@ -78,9 +78,9 @@ export default function ContactPage() {
 
           {/* Map placeholder */}
           <div className="mt-16">
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">Visit Our Store</h2>
-            <div className="bg-secondary rounded-lg h-96 flex items-center justify-center">
-              <p className="text-muted-foreground">Google Map Integration Coming Soon</p>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6 text-center">Visit Our Store</h2>
+            <div className="w-full h-96 rounded-lg overflow-hidden shadow-md border border-border">
+              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3558.3064404812067!2d75.7737849750494!3d26.893768076658464!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db469df9291bd%3A0x9fd681cc7e191b70!2sE-136A%2C%20Katariya%20Colony%2C%20Ganesh%20Nagar%2C%20Ramnagar%2C%20Jaipur%2C%20Rajasthan%20302019!5e0!3m2!1sen!2sin!4v1775748117512!5m2!1sen!2sin" width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
             </div>
           </div>
         </div>

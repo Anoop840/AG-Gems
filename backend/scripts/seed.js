@@ -57,6 +57,9 @@ const seedDatabase = async () => {
 
     await connectDB();
 
+    await User.collection.dropIndex("walletAddress_1").catch(() => {});
+    await User.syncIndexes();
+
     if (shouldReset) {
       await Promise.all([
         Category.deleteMany({}),

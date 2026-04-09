@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import ProductCard from "@/components/product-card"
@@ -13,29 +14,40 @@ export default function ShopPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState("featured")
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const category = searchParams.get("category")
+    setSelectedCategory(category ? decodeURIComponent(category) : null)
+  }, [searchParams])
 
   useEffect(() => {
     fetchProducts()
   }, [])
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (includeInactive = false): Promise<void> => {
     try {
       setLoading(true)
       setError(null)
-      
-      // Log API URL for debugging
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-      console.log('Fetching products from:', `${apiUrl}/products`)
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      console.log('Fetching products from:', `${apiUrl.replace(/\/+$/, '')}/api/products`)
       
       const response = await productAPI.getProducts({
         limit: 1000, // Get all products (increased limit)
-        sort: sortBy === 'price-low' ? 'price' : sortBy === 'price-high' ? '-price' : '-createdAt'
+        sort: sortBy === 'price-low' ? 'price' : sortBy === 'price-high' ? '-price' : '-createdAt',
+        includeInactive
       })
       
       console.log('Products response:', response)
       
       if (response.success && response.products) {
         setProducts(response.products)
+        if (response.products.length === 0 && !includeInactive) {
+          await fetchProducts(true)
+          return
+        }
+
         if (response.products.length === 0) {
           setError('No products found in the database. Please run the seed script: "npm run seed" in the backend directory.')
         }

@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
-    walletAddress: { type: String, unique: true, sparse: true, default: null },
+    walletAddress: { type: String },
     isActive: { type: Boolean, default: true, select: false },
     addresses: [
       {
@@ -59,6 +59,14 @@ userSchema.pre("save", async function (next) {
   this.passwordChangedAt = new Date();
   next();
 });
+
+userSchema.index(
+  { walletAddress: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { walletAddress: { $type: "string" } },
+  }
+);
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);

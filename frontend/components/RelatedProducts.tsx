@@ -1,24 +1,15 @@
 // frontend/components/RelatedProducts.tsx
 import { useEffect, useState } from "react";
 import ProductCard from "./product-card";
-import { api } from "@/lib/api";
-
-interface Product {
-  _id: string;
-  image: string;
-  title: string;
-  price: number;
-  category: string;
-}
+import { Product, productAPI } from "@/lib/api";
 
 export function RelatedProducts({ productId }: { productId: string }) {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchRelated = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}/related`);
-      const data = await res.json();
-      setProducts(data);
+      const response = await productAPI.getRelatedProducts(productId);
+      setProducts(response.products || []);
     };
     fetchRelated();
   }, [productId]);
